@@ -1,13 +1,17 @@
+extern crate rand;
 extern crate glutin_window;
 extern crate graphics;
 extern crate opengl_graphics;
 extern crate piston;
 
 use glutin_window::GlutinWindow;
+use graphics::rectangle;
 use opengl_graphics::{GlGraphics, OpenGL};
 use piston::event_loop::*;
 use piston::input::*;
 use piston::window::WindowSettings;
+
+use rand::Rng;
 
 use std::collections::LinkedList;
 use std::iter::FromIterator;
@@ -23,6 +27,7 @@ enum Direction {
 struct Game {
     gl: GlGraphics,
     snake: Snake,
+    food: Food,
 }
 
 impl Game {
@@ -34,6 +39,7 @@ impl Game {
         });
 
         self.snake.render(&mut self.gl, arg);
+        self.food.render(&mut self.gl, arg);
     }
 
     fn update(&mut self) {
@@ -100,10 +106,31 @@ impl Snake {
     }
 }
 
+struct Food {
+    x: i32,
+    y: i32,
+}
+
+impl Food {
+    fn render(&self, gl: &mut GlGraphics, args: &RenderArgs) {
+        const WHITE: [f32; 4] = [1.0; 4];
+
+        gl.draw(args.viewport(), |c, gl| {
+            rectangle(
+                WHITE, 
+                rectangle::square((self.x * 20) as f64, (self.y * 20) as f64, 20_f64), 
+                graphics::Transformed::trans(c.transform, 0.0, 0.0),
+                gl
+            );
+        });
+    }
+}
+
 fn main() {
     let opengl = OpenGL::V3_2;
+    let mut rng = rand::thread_rng();
 
-    let mut window: GlutinWindow = WindowSettings::new("snake game", [300, 300])
+    let mut window: GlutinWindow = WindowSettings::new("snake game", [400, 400])
         .opengl(opengl)
         .exit_on_esc(true)
         .build()
@@ -114,6 +141,10 @@ fn main() {
         snake: Snake {
             body: LinkedList::from_iter((vec![(0, 0), (0, 1)]).into_iter()),
             dir: Direction::Right,
+        },
+        food: Food { 
+            x: rng.gen_range(0..20), 
+            y: rng.gen_range(0..20),
         },
     };
 
